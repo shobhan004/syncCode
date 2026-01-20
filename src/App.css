@@ -1,0 +1,129 @@
+/* App.css */
+
+/* 1. Main Container */
+
+/* --- CODEHELP SIGNATURE GREY-BLACK THEME --- */
+
+/* --- Syntax Colors (CodeHelp/VS Code Style) --- */
+
+
+/* Keywords: if, else, return, var, let, const */
+.cm-s-dracula span.cm-keyword { color: #01090f !important; font-weight: bold; }
+
+/* Strings: "Hello World", 'Single quotes' */
+.cm-s-dracula span.cm-string { color: #ce9178 !important; }
+
+/* Variables: let myVar, functionName */
+.cm-s-dracula span.cm-variable { color: #9cdcfe !important; }
+.cm-s-dracula span.cm-variable-2 { color: #9cdcfe !important; }
+
+/* Functions: console.log(), myFunction() */
+.cm-s-dracula span.cm-def { color: #dcdcaa !important; }
+.cm-s-dracula span.cm-property { color: #6997fb !important; }
+
+/* Comments: // This is a comment */
+.cm-s-dracula span.cm-comment { color: #6a9955 !important; font-style: italic; }
+
+/* Numbers: 123, 0.5 */
+.cm-s-dracula span.cm-number { color: #b5cea8 !important; }
+
+/* Operators: +, -, =, *, && */
+.cm-s-dracula span.cm-operator { color: #d4d4d4 !important; }
+
+/* Types/Classes: Boolean, String, Array */
+.cm-s-dracula span.cm-type { color: #4ec9b0 !important; }
+
+/* Boolean/Null: true, false, null */
+.cm-s-dracula span.cm-atom { color: #569cd6 !important; }
+
+.cm-s-dracula.CodeMirror {
+    background-color: #1e1e1e !important; /* CodeHelp Grey-Black */
+    color: #d4d4d4 !important; /* Default Light Grey Text */
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-size: 17px !important;
+    line-height: 1.5 !important;
+}
+
+/* Line Numbers (Gutter) */
+.cm-s-dracula .CodeMirror-gutters {
+    background-color: #1e1e1e !important; /* Matching background */
+    border-right: 1px solid #333333 !important; /* Subtle border */
+    width: 45px;
+}
+
+.cm-s-dracula .CodeMirror-linenumber {
+    color: #858585 !important; /* Muted grey line numbers */
+    padding-left: 10px !important;
+}
+
+/* Cursor Style */
+.cm-s-dracula .CodeMirror-cursor {
+    border-left: 2px solid #aeafad !important; /* Standard grey-white cursor */
+}
+
+/* Selection Highlight (VS Code / CodeHelp style) */
+.cm-s-dracula .CodeMirror-selected {
+    background: #264f78 !important; 
+}
+
+/* Active Line Highlight */
+.cm-s-dracula .CodeMirror-activeline-background {
+    background: #2a2d2e !important;
+}
+
+/* --- Syntax Highlighting (Babbar Style VS Code) --- */
+.cm-s-dracula span.cm-keyword { color: #569cd6 !important; }   /* keywords: Blue */
+.cm-s-dracula span.cm-def { color: #dcdcaa !important; }       /* functions: Yellow-ish */
+.cm-s-dracula span.cm-variable { color: #9cdcfe !important; }  /* variables: Light Blue */
+.cm-s-dracula span.cm-string { color: #ce9178 !important; }    /* strings: Brown-ish */
+.cm-s-dracula span.cm-comment { color: #6a9955 !important; }   /* comments: Green */
+.cm-s-dracula span.cm-number { color: #b5cea8 !important; }    /* numbers: Light Green */
+.cm-s-dracula span.cm-operator { color: #d4d4d4 !important; }  /* operators: White */
+
+
+/* App.css ya Editor.css mein */
+.owner-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ffb86c; /* Dracula orange/gold color */
+    color: #282a36;
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+/* Doosre user ki line ka style */
+.remote-line-highlight {
+   background-color: rgba(139, 92, 246, 0.15) !important; /* Thoda light purple */
+    border-left: 3px solid #8b5cf6;
+    transition: none !important; /* 👈 Flicker yahan se rukega */
+    pointer-events: none;
+}
+
+.CodeMirror-line {
+    position: relative;
+    z-index: 2;
+}
+
+/* Custom Scrollbar for Chat & Sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px; /* Patla scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Track invisible rakhenge */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3); /* Purple tint with transparency */
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.6); /* Hover par thoda dark ho jayega */
+}
