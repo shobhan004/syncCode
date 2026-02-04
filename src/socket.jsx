@@ -6,8 +6,8 @@ export const initSocket = async () => {
         forceNew: true,
         reconnectionAttempts: 'Infinity',
         timeout: 10000,
-        // ✅ Pehle WebSocket try karo, ye fast hota hai
-        transports: [, 'polling' , 'websocket'],
+        // Pehle polling try karo, fir websocket par upgrade hoga
+        transports: ['polling', 'websocket'], 
         withCredentials: true,
     });
 };
