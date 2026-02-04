@@ -2,7 +2,7 @@ import {io} from 'socket.io-client'
 
 // helper function hai
 export const initSocket = async () => {
-    return io('http://localhost:3001', {
+    return io("https://synccode-production.up.railway.app", {
         forceNew: true,
         reconnectionAttempts: 'Infinity',
         timeout: 10000,
