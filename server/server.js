@@ -12,7 +12,7 @@ const roomInputMap = {};
 const io = new Server(server, {
     cors: {
         // Yahan aapka Firebase wala link hona chahiye
-        origin: "https://realtime-code-editor-ae35c.web.app", 
+        origin: "*", 
         methods: ["GET", "POST"],
         credentials: true
     },
