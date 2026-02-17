@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 const URL =
   import.meta.env.MODE === "development"
     ? "http://localhost:3001"
-    : "https://synccode-production.up.railway.app";
+    : "https://synccode.zeabur.app";
 
 export const initSocket = () => {
   return io(URL, {
