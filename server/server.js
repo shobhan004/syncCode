@@ -42,18 +42,20 @@ const ai = new GoogleGenAI({
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
-  "realtime-code-editor-ae35c.firebaseapp.com",
-  "realtime-code-editor-ae35c.web.app"
-
+  "https://realtime-code-editor-ae35c.firebaseapp.com",
+  "https://realtime-code-editor-ae35c.web.app"
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: "*",
     methods: ["GET", "POST"],
     credentials: true,
   })
 );
+
+app.use(cors({ origin: "*" }));
+
 
 /* -------------------- HEALTH CHECK -------------------- */
 app.get("/", (req, res) => {
@@ -63,7 +65,7 @@ app.get("/", (req, res) => {
 /* -------------------- SOCKET.IO -------------------- */
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: "*",
     methods: ["GET", "POST"],
     credentials: true,
   },
