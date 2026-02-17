@@ -218,33 +218,77 @@ const sendMessage = async (e) => {
 };
 
     const runCode = async () => {
-        if (!codeRef.current?.trim()) return toast.error("Write code first!");
-        setIsCompiling(true);
-        setOutput("Compiling...");
-        try {
-            const languageMap = {
-                javascript: { lang: 'javascript', version: '18.15.0' },
-                python: { lang: 'python', version: '3.10.0' },
-                cpp: { lang: 'c++', version: '10.2.0' },
-                java: { lang: 'java', version: '15.0.2' },
-            };
-            const config = languageMap[language];
-            const response = await axios.post('https://emkc.org/api/v2/piston/execute', {
-                language: config.lang,
-                version: config.version,
-                files: [{ content: codeRef.current }],
-                stdin: stdinRef.current,
-            });
-            const out = response.data.run.stderr || response.data.run.stdout || response.data.run.output;
-            setOutput(out);
-            set(ref(db, `rooms/${roomId}/output`), out);
-        } catch (err) {
-            setOutput("Execution failed");
-        } finally {
-            setIsCompiling(false);
-        }
+    if (!codeRef.current?.trim()) return toast.error("Write code first!");
+    setIsCompiling(true);
+    setOutput("Compiling...");
+
+    const languageMap = {
+        javascript: { lang: 'javascript', version: '18.15.0' },
+        python: { lang: 'python', version: '3.10.0' },
+        cpp: { lang: 'c++', version: '10.2.0' },
+        java: { lang: 'java', version: '15.0.2' },
     };
 
+    const config = languageMap[language];
+
+    // ✅ Two different APIs — if first fails, second try hoga
+    const APIS = [
+        'https://emkc.org/api/v2/piston/execute',
+        'https://piston-api.fly.dev/api/v2/piston/execute',
+    ];
+
+    let success = false;
+
+    for (let i = 0; i < APIS.length; i++) {
+        try {
+            setOutput(i === 0 ? "Compiling..." : "Retrying with backup server...");
+
+            const response = await axios.post(
+                APIS[i],
+                {
+                    language: config.lang,
+                    version: config.version,
+                    files: [{ content: codeRef.current }],
+                    stdin: stdinRef.current || '',
+                },
+                {
+                    headers: { "Content-Type": "application/json" },
+                    timeout: 15000,
+                }
+            );
+
+            const out = response.data?.run?.stderr
+                     || response.data?.run?.stdout
+                     || response.data?.run?.output
+                     || "✅ Code ran successfully but no output.";
+
+            setOutput(out);
+            set(ref(db, `rooms/${roomId}/output`), out);
+            success = true;
+            break; // ✅ Success mil gaya — loop band karo
+
+        } catch (err) {
+            console.error(`API ${i + 1} failed:`, err.response?.status, err.response?.data);
+
+            // ✅ Agar last API bhi fail ho gayi
+            if (i === APIS.length - 1) {
+                const status = err.response?.status;
+                if (status === 401) {
+                    setOutput("❌ Code execution service unavailable. Please try again in a moment.");
+                } else if (status === 429) {
+                    setOutput("❌ Too many requests. Please wait 30 seconds and try again.");
+                } else if (err.code === 'ECONNABORTED') {
+                    setOutput("❌ Execution timed out. Your code may have an infinite loop.");
+                } else {
+                    setOutput(`❌ Execution failed (${status || 'Network Error'}). Try again.`);
+                }
+            }
+            // ✅ Agar pehli API fail hui — dusri try hogi automatically
+        }
+    }
+
+    setIsCompiling(false);
+};
     const handleCodeChange = (newCode) => {
         codeRef.current = newCode;
         if (timerRef.current) clearTimeout(timerRef.current);
