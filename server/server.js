@@ -48,13 +48,18 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: "*",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
-    credentials: true,
+    credentials: false, // keep false since we removed withCredentials on client
   })
 );
 
-app.use(cors({ origin: "*" }));
 
 
 /* -------------------- HEALTH CHECK -------------------- */
@@ -65,9 +70,15 @@ app.get("/", (req, res) => {
 /* -------------------- SOCKET.IO -------------------- */
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
-    credentials: true,
+    credentials: false,
   },
   transports: ["polling", "websocket"],
 });
