@@ -118,17 +118,19 @@ io.on("connection", (socket) => {
     });
   });
 
-  // --- Gemini AI Integration (SyncCode AI) ---
-socket.on('SEND_AI_PROMPT', async ({ roomId, prompt }) => {
+ socket.on('SEND_AI_PROMPT', async ({ roomId, prompt }) => {
   if (!prompt?.trim()) return;
 
   try {
     const response = await ai.models.generateContent({
-      model: "models/gemini-2.0-flash", // supported model
+      model: "gemini-2.0-flash", // ✅ models/ hata diya
       contents: `You are SyncCode AI, a helpful coding assistant. Use Markdown for code.\n\nUser Question: ${prompt}`,
     });
 
-   const text = response?.output?.[0]?.content?.[0]?.text || "⚠️ AI returned empty response.";
+    // ✅ Sahi parsing
+    const text = response?.candidates?.[0]?.content?.parts?.[0]?.text
+              || response?.text
+              || "⚠️ AI returned empty response.";
 
     io.to(roomId).emit('ADD_MESSAGE', {
       text,
@@ -139,7 +141,6 @@ socket.on('SEND_AI_PROMPT', async ({ roomId, prompt }) => {
 
   } catch (error) {
     console.error("Gemini Final Error:", error);
-
     io.to(roomId).emit('ADD_MESSAGE', {
       text: "⚠️ AI temporarily unavailable. Please try again.",
       username: 'SyncCode AI',
@@ -147,9 +148,6 @@ socket.on('SEND_AI_PROMPT', async ({ roomId, prompt }) => {
     });
   }
 });
-
-
-
 
   // --- Code & Editor Sync ---
   socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
