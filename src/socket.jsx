@@ -1,13 +1,16 @@
-import {io} from 'socket.io-client'
+import { io } from "socket.io-client";
 
-// helper function hai
-export const initSocket = async () => {
-    return io("https://synccode-production.up.railway.app", {
-        forceNew: true,
-        reconnectionAttempts: 'Infinity',
-        timeout: 10000,
-        // Pehle polling try karo, fir websocket par upgrade hoga
-        transports: ['polling', 'websocket'], 
-        withCredentials: true,
-    });
+const URL =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:3001"
+    : "https://synccode-production.up.railway.app";
+
+export const initSocket = () => {
+  return io(URL, {
+    forceNew: true,
+    reconnectionAttempts: Infinity,
+    timeout: 20000,
+    transports: ["polling", "websocket"],
+    withCredentials: true,
+  });
 };

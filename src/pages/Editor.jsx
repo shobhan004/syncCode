@@ -110,6 +110,25 @@ function Editor() {
                         )
                     );
                 });
+                
+                // Editor.jsx ke useEffect ke andar, socket.on(ACTIONS.JOINED) ke neeche add karo:
+
+socket.on('ADD_MESSAGE', async (msg) => {
+    // Jab AI ka jawab backend se aaye, use Firebase messages mein push kar do
+    const chatDbRef = ref(db, `rooms/${roomId}/messages`);
+    await push(chatDbRef, {
+        text: msg.text,
+        username: msg.username,
+        timestamp: Date.now(),
+        isAi: msg.isAi,
+    });
+    setIsAiLoading(false); // Loading stop
+});
+
+socket.on('ERROR', ({ msg }) => {
+    toast.error(msg);
+    setIsAiLoading(false);
+});
 
                 socket.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
                     // if (username) toast.error(`${username} left`);
@@ -166,64 +185,37 @@ function Editor() {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    const sendMessage = async (e) => {
-        e.preventDefault();
-        if (!newMessage.trim()) return;
+    // Editor.jsx ke andar sendMessage function ko replace karo
+const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
 
-        const userMsg = newMessage;
-        setNewMessage("");
-        const chatDbRef = ref(db, `rooms/${roomId}/messages`);
+    const userMsg = newMessage;
+    setNewMessage(""); // Input turant clear karo
 
-        await push(chatDbRef, {
-            text: userMsg,
-            username: location.state?.username || "Guest",
-            timestamp: Date.now(),
-            isAi: false,
-        });
+    // 1. User ka message Firebase chat mein dalo (jaise pehle dal rahe the)
+    const chatDbRef = ref(db, `rooms/${roomId}/messages`);
+    await push(chatDbRef, {
+        text: userMsg,
+        username: location.state?.username || "Guest",
+        timestamp: Date.now(),
+        isAi: false,
+    });
 
-        if (userMsg.toLowerCase().startsWith("/ai")) {
-            try {
-                const prompt = userMsg.replace("/ai", "").trim();
-                const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-               // ✅ Gemini 2.5 Flash ka updated URL
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+    // 2. Agar /ai command hai, toh direct API call ki jagah SOCKET use karo
+    if (userMsg.toLowerCase().startsWith("/ai")) {
+        setIsAiLoading(true); // Loading start
+        const prompt = userMsg.replace("/ai", "").trim();
 
-                setIsAiLoading(true);
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-    contents: [{ 
-        parts: [{ 
-            text: `Instruction: You are a coding assistant. Analyze and explain the following code or answer the question. 
-            
-            User Input: ${prompt}` 
-        }] 
-    }],
-    // ✅ Safety settings ko relax karne ke liye ye add kar sakte ho (Optional)
-    safetySettings: [
-        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }
-    ]
-}),
-                });
-
-                const data = await response.json();
-                const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response from AI";
-
-                await push(chatDbRef, {
-                    text: aiText,
-                    username: "SyncCode AI",
-                    timestamp: Date.now(),
-                    isAi: true,
-                });
-            } catch (err) {
-                toast.error("AI Error");
-            } finally {
-                setIsAiLoading(false);
-            }
+        if (socketRef.current) {
+            // ✅ Ab server.js wala 'SEND_AI_PROMPT' trigger hoga
+            socketRef.current.emit('SEND_AI_PROMPT', {
+                roomId,
+                prompt: prompt
+            });
         }
-    };
+    }
+};
 
     const runCode = async () => {
         if (!codeRef.current?.trim()) return toast.error("Write code first!");
