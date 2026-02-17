@@ -2,7 +2,7 @@ import { io } from "socket.io-client";
 
 const URL =
   import.meta.env.MODE === "development"
-    ? "http://localhost:3001"
+    ? "http://localhost:8080"
     : "https://synccode.zeabur.app";
 
 export const initSocket = () => {
@@ -11,6 +11,5 @@ export const initSocket = () => {
     reconnectionAttempts: Infinity,
     timeout: 20000,
     transports: ["polling", "websocket"],
-    withCredentials: true,
   });
 };
