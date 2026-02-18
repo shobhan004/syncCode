@@ -245,15 +245,14 @@ const sendMessage = async (e) => {
                         timeout: 15000,
                     }
                 );
-    
-                const out =
+    const out =
     response.data?.stdout ||
-    response.data?.stderr ||
     response.data?.compile_output ||
-    "✅ Code ran successfully but no output.";
-    
-                setOutput(out);
-                set(ref(db, `rooms/${roomId}/output`), out);
+    response.data?.stderr ||
+    `❌ ${response.data?.status?.description || "Execution failed"}`;
+
+setOutput(out);
+set(ref(db, `rooms/${roomId}/output`), out);
     
             } catch (err) {
                 console.error("Execution Error:", err.response?.status, err.message);
