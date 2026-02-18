@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 const URL =
   import.meta.env.MODE === "development"
     ? "http://localhost:8080"
-    : "https://synccode.zeabur.app";
+    :  import.meta.env.VITE_BACKEND_URL;
 
 export const initSocket = () => {
   return io(URL, {

@@ -3,7 +3,8 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const { ACTIONS } = require("./action");
-const { GoogleGenAI } = require("@google/genai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
 require("dotenv").config(); // Environment variables ke liye
 
 const app = express();
@@ -20,10 +21,7 @@ console.log("ENV CHECK:", {
 
 
 // NOTE: Is API Key ko .env file mein daal dena production ke time
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  apiVersion: "v1", // ensure correct API version // .env me rakho key
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // async function listModels() {
 //   try {
@@ -118,32 +116,34 @@ io.on("connection", (socket) => {
     });
   });
 
- socket.on('SEND_AI_PROMPT', async ({ roomId, prompt }) => {
-  if (!prompt?.trim()) return;
+ socket.on("SEND_AI_PROMPT", async ({ roomId, prompt }) => {
+  if (!prompt || !prompt.trim()) return;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash", // ✅ models/ hata diya
-      contents: `You are SyncCode AI, a helpful coding assistant. Use Markdown for code.\n\nUser Question: ${prompt}`,
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash", // ✅ SAFE MODEL
     });
 
-    // ✅ Sahi parsing
-    const text = response?.candidates?.[0]?.content?.parts?.[0]?.text
-              || response?.text
-              || "⚠️ AI returned empty response.";
+    const result = await model.generateContent(
+      `You are SyncCode AI, a helpful coding assistant. Use Markdown for code.\n\nUser Question: ${prompt}`
+    );
 
-    io.to(roomId).emit('ADD_MESSAGE', {
+    const response = await result.response;
+    const text = response.text(); // ✅ SIMPLE & SAFE
+
+    io.to(roomId).emit("ADD_MESSAGE", {
       text,
-      username: 'SyncCode AI',
+      username: "SyncCode AI",
       isAi: true,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: Date.now(),
     });
 
-  } catch (error) {
-    console.error("Gemini Final Error:", error);
-    io.to(roomId).emit('ADD_MESSAGE', {
+  } catch (err) {
+    console.error("🔥 Gemini Error:", err.message);
+
+    io.to(roomId).emit("ADD_MESSAGE", {
       text: "⚠️ AI temporarily unavailable. Please try again.",
-      username: 'SyncCode AI',
+      username: "SyncCode AI",
       isAi: true,
     });
   }
