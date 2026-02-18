@@ -247,10 +247,10 @@ const sendMessage = async (e) => {
                 );
     
                 const out =
-                    response.data?.run?.stderr ||
-                    response.data?.run?.stdout ||
-                    response.data?.run?.output ||
-                    "✅ Code ran successfully but no output.";
+    response.data?.stdout ||
+    response.data?.stderr ||
+    response.data?.compile_output ||
+    "✅ Code ran successfully but no output.";
     
                 setOutput(out);
                 set(ref(db, `rooms/${roomId}/output`), out);
