@@ -48,7 +48,7 @@ app.get("/", (req, res) => {
 
 /* -------------------- CODE EXECUTION -------------------- */
 app.post("/execute", async (req, res) => {
-  const { language, version, code, stdin } = req.body;
+  const { language, code, stdin } = req.body;
 
   const languageIds = {
     javascript: 63,
@@ -60,29 +60,35 @@ app.post("/execute", async (req, res) => {
   const language_id = languageIds[language];
   if (!language_id) return res.status(400).json({ error: "Unsupported language" });
 
- try {
-    const response = await fetch(
-      "https://ce.judge0.com/submissions?base64_encoded=false&wait=true",
+  try {
+    // Step 1: Submit
+    const submitRes = await fetch(
+      "https://ce.judge0.com/submissions?base64_encoded=false",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          language_id,
-          source_code: code,
-          stdin: stdin || "",
-        }),
+        body: JSON.stringify({ language_id, source_code: code, stdin: stdin || "" }),
       }
     );
+    const { token } = await submitRes.json();
 
-    const data = await response.json();
-    res.json(data);
+    // Step 2: Poll result
+    let result;
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 1000));
+      const pollRes = await fetch(
+        `https://ce.judge0.com/submissions/${token}?base64_encoded=false`
+      );
+      result = await pollRes.json();
+      if (result.status?.id >= 3) break;
+    }
 
+    res.json(result);
   } catch (err) {
     console.error("Judge0 Error:", err.message);
     res.status(500).json({ error: "Execution failed" });
   }
 });
-
 /* -------------------- SOCKET.IO -------------------- */
 const io = new Server(server, {
   cors: {
