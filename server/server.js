@@ -5,11 +5,6 @@ const cors = require("cors");
 const { ACTIONS } = require("./action");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-require("dotenv").config(); // Environment variables ke liye
-
-const app = express();
-const server = http.createServer(app);
-
 require("dotenv").config();
 console.log("ENV CHECK:", {
   PORT: process.env.PORT,
@@ -17,24 +12,7 @@ console.log("ENV CHECK:", {
 });
 
 /* -------------------- AI CONFIG -------------------- */
-// API Key yahan hai, par testing ke baad ise process.env.GEMINI_API_KEY mein daal dena
-
-
-// NOTE: Is API Key ko .env file mein daal dena production ke time
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// async function listModels() {
-//   try {
-//     const models = await ai.models.list();
-//     console.log("Available models:", models);
-//   } catch (err) {
-//     console.error(err);
-//   }
-// }
-
-// listModels();
-
-// ✅ FIX: apiVersion: 'v1' add kiya hai taaki 404 error na aaye
 
 /* -------------------- CORS -------------------- */
 const allowedOrigins = [
@@ -43,6 +21,11 @@ const allowedOrigins = [
   "https://realtime-code-editor-ae35c.firebaseapp.com",
   "https://realtime-code-editor-ae35c.web.app"
 ];
+
+const app = express();
+const server = http.createServer(app);
+
+app.use(express.json()); // ✅ JSON body parse karne ke liye
 
 app.use(
   cors({
@@ -54,15 +37,50 @@ app.use(
       }
     },
     methods: ["GET", "POST"],
-    credentials: false, // keep false since we removed withCredentials on client
+    credentials: false,
   })
 );
-
-
 
 /* -------------------- HEALTH CHECK -------------------- */
 app.get("/", (req, res) => {
   res.send("SyncCode Server mast chal raha hai bhai!");
+});
+
+/* -------------------- CODE EXECUTION -------------------- */
+app.post("/execute", async (req, res) => {
+  const { language, version, code, stdin } = req.body;
+
+  const languageIds = {
+    javascript: 63,
+    python: 71,
+    "c++": 54,
+    java: 62,
+  };
+
+  const language_id = languageIds[language];
+  if (!language_id) return res.status(400).json({ error: "Unsupported language" });
+
+ try {
+    const response = await fetch(
+      "https://ce.judge0.com/submissions?base64_encoded=false&wait=true",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          language_id,
+          source_code: code,
+          stdin: stdin || "",
+        }),
+      }
+    );
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (err) {
+    console.error("Judge0 Error:", err.message);
+    res.status(500).json({ error: "Execution failed" });
+  }
 });
 
 /* -------------------- SOCKET.IO -------------------- */
@@ -116,38 +134,39 @@ io.on("connection", (socket) => {
     });
   });
 
- socket.on("SEND_AI_PROMPT", async ({ roomId, prompt }) => {
-  if (!prompt || !prompt.trim()) return;
+  // --- AI Prompt ---
+  socket.on("SEND_AI_PROMPT", async ({ roomId, prompt }) => {
+    if (!prompt || !prompt.trim()) return;
 
-  try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash", // ✅ SAFE MODEL
-    });
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+      });
 
-    const result = await model.generateContent(
-      `You are SyncCode AI, a helpful coding assistant. Use Markdown for code.\n\nUser Question: ${prompt}`
-    );
+      const result = await model.generateContent(
+        `You are SyncCode AI, a helpful coding assistant. Use Markdown for code.\n\nUser Question: ${prompt}`
+      );
 
-    const response = await result.response;
-    const text = response.text(); // ✅ SIMPLE & SAFE
+      const response = await result.response;
+      const text = response.text();
 
-    io.to(roomId).emit("ADD_MESSAGE", {
-      text,
-      username: "SyncCode AI",
-      isAi: true,
-      timestamp: Date.now(),
-    });
+      io.to(roomId).emit("ADD_MESSAGE", {
+        text,
+        username: "SyncCode AI",
+        isAi: true,
+        timestamp: Date.now(),
+      });
 
-  } catch (err) {
-    console.error("🔥 Gemini Error:", err.message);
+    } catch (err) {
+      console.error("🔥 Gemini Error:", err.message);
 
-    io.to(roomId).emit("ADD_MESSAGE", {
-      text: "⚠️ AI temporarily unavailable. Please try again.",
-      username: "SyncCode AI",
-      isAi: true,
-    });
-  }
-});
+      io.to(roomId).emit("ADD_MESSAGE", {
+        text: "⚠️ AI temporarily unavailable. Please try again.",
+        username: "SyncCode AI",
+        isAi: true,
+      });
+    }
+  });
 
   // --- Code & Editor Sync ---
   socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
