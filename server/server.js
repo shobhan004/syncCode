@@ -160,6 +160,8 @@ io.on("connection", (socket) => {
       const response = await result.response;
       const text = response.text();
 
+      console.log("Ai logs received" , text);
+
       // io.to(roomId).emit("ADD_MESSAGE", {
       //   text,
       //   username: "SyncCode AI",
@@ -177,7 +179,7 @@ io.on("connection", (socket) => {
     } catch (err) {
       console.error("🔥 Gemini Error:", err.message);
 
-  socket.emit("ADD_MESSAGE", {
+    socket.emit("ADD_MESSAGE", {
   text: "⚠️ AI temporarily unavailable. Please try again.",
   username: "SyncCode AI",
   isAi: true,
