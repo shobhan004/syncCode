@@ -47,8 +47,9 @@ app.get("/", (req, res) => {
 });
 
 /* -------------------- CODE EXECUTION -------------------- */
-app.post("/execute", async (req, res) => {
-  const { language, code, stdin } = req.body;
+app.post("/execute", async(req, res) => {
+  const { language, version, code, stdin } = req.body;
+
 
   const languageIds = {
     javascript: 63,
@@ -121,11 +122,14 @@ function getAllClients(roomId) {
 }
 
 /* -------------------- CONNECTION -------------------- */
+// 1st to trigger when clinet user makes connction
+
 io.on("connection", (socket) => {
   console.log("✅ Connected:", socket.id);
 
   // --- Join Room ---
-  socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
+  // socket.on mtlb sunna and socket.emit mtlb bolna 
+  socket.on(ACTIONS.JOIN, ({ roomId , username }) => {
     const isAdmin = !io.sockets.adapter.rooms.get(roomId);
     userSocketMap[socket.id] = { username, isAdmin };
     socket.join(roomId);
@@ -156,9 +160,16 @@ io.on("connection", (socket) => {
       const response = await result.response;
       const text = response.text();
 
-      io.to(roomId).emit("ADD_MESSAGE", {
-        text,
-        username: "SyncCode AI",
+      // io.to(roomId).emit("ADD_MESSAGE", {
+      //   text,
+      //   username: "SyncCode AI",
+      //   isAi: true,
+      //   timestamp: Date.now(),
+      // });
+
+      socket.emit("ADD_MESSAGE" , {
+      text,
+      username: "SyncCode AI",
         isAi: true,
         timestamp: Date.now(),
       });
@@ -166,18 +177,17 @@ io.on("connection", (socket) => {
     } catch (err) {
       console.error("🔥 Gemini Error:", err.message);
 
-      io.to(roomId).emit("ADD_MESSAGE", {
-        text: "⚠️ AI temporarily unavailable. Please try again.",
-        username: "SyncCode AI",
-        isAi: true,
-      });
+  socket.emit("ADD_MESSAGE", {
+  text: "⚠️ AI temporarily unavailable. Please try again.",
+  username: "SyncCode AI",
+  isAi: true,
+  timestamp: Date.now(),
+});
     }
   });
 
   // --- Code & Editor Sync ---
-  socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
-    io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });
-  });
+
 
   socket.on(ACTIONS.CURSOR_CHANGE, ({ roomId, lineNumber, username }) => {
     socket.to(roomId).volatile.emit(ACTIONS.CURSOR_CHANGE, {
@@ -185,20 +195,6 @@ io.on("connection", (socket) => {
       username,
       socketId: socket.id,
     });
-  });
-
-  socket.on(ACTIONS.TYPING, ({ roomId, username }) => {
-    socket.to(roomId).emit(ACTIONS.TYPING, { username });
-  });
-
-  // --- Output & Input Sync ---
-  socket.on(ACTIONS.SYNC_OUTPUT, ({ roomId, output }) => {
-    io.to(roomId).emit(ACTIONS.SYNC_OUTPUT, { output });
-  });
-
-  socket.on(ACTIONS.SYNC_INPUT, ({ roomId, stdin }) => {
-    roomInputMap[roomId] = stdin;
-    socket.to(roomId).emit(ACTIONS.SYNC_INPUT, { stdin });
   });
 
   // --- Disconnect Logic ---

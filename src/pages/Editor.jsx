@@ -43,7 +43,7 @@ function Editor() {
             navigate('/');
             return;
         }
-
+        // ye sb address hai room ke code stdin output typing ko access krne ke liye 
         const codeDbRef = ref(db, `rooms/${roomId}/code`);
         const inputDbRef = ref(db, `rooms/${roomId}/stdin`);
         const outputDbRef = ref(db, `rooms/${roomId}/output`);
@@ -87,8 +87,12 @@ function Editor() {
         // ✅ FIXED: Async Socket Initialization
         const initOldSocket = async () => {
             if (!socketRef.current) {
+                
+                // server se connection established ho rha hai
                 const socket = await initSocket();
                 socketRef.current = socket;
+                
+                // line-wise bhi chalega  cursor jb pochecha 97 pr tb call hoga
 
                 socket.emit(ACTIONS.JOIN, {
                     roomId,
@@ -103,7 +107,8 @@ function Editor() {
                 });
 
                 // ✅ Sidebar Tracking (No flicker)
-                socket.on(ACTIONS.CURSOR_CHANGE, ({ socketId, lineNumber }) => {
+                // mapping clients with line number 
+                socket.on(ACTIONS.CURSOR_CHANGE, ({ socketId , lineNumber }) => {
                     setClients((prev) =>
                         prev.map((client) =>
                             client.socketId === socketId ? { ...client, currentLine: lineNumber + 1 } : client
@@ -113,22 +118,22 @@ function Editor() {
                 
                 // Editor.jsx ke useEffect ke andar, socket.on(ACTIONS.JOINED) ke neeche add karo:
 
-socket.on('ADD_MESSAGE', async (msg) => {
-    // Jab AI ka jawab backend se aaye, use Firebase messages mein push kar do
-    const chatDbRef = ref(db, `rooms/${roomId}/messages`);
-    await push(chatDbRef, {
-        text: msg.text,
-        username: msg.username,
-        timestamp: Date.now(),
-        isAi: msg.isAi,
-    });
-    setIsAiLoading(false); // Loading stop
-});
+                socket.on('ADD_MESSAGE', async (msg) => {
+                    // Jab AI ka jawab backend se aaye, use Firebase messages mein push kar do
+                    const chatDbRef = ref(db, `rooms/${roomId}/messages`);
+                    await push(chatDbRef, {
+                        text: msg.text,
+                        username: msg.username,
+                        timestamp: Date.now(),
+                        isAi: msg.isAi,
+                    });
+                    setIsAiLoading(false); // Loading stop
+                });
 
-socket.on('ERROR', ({ msg }) => {
-    toast.error(msg);
-    setIsAiLoading(false);
-});
+                socket.on('ERROR', ({ msg }) => {
+                    toast.error(msg);
+                    setIsAiLoading(false);
+                });
 
                 socket.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
                     // if (username) toast.error(`${username} left`);
@@ -148,7 +153,7 @@ socket.on('ERROR', ({ msg }) => {
                 socketRef.current = null;
             }
         };
-    }, [roomId]);
+    } , [roomId]);
 
     // ✅ 2. Input Editor Setup
     useEffect(() => {
@@ -269,6 +274,7 @@ set(ref(db, `rooms/${roomId}/output`), out);
     
             setIsCompiling(false);
         };
+        
     const handleCodeChange = (newCode) => {
         codeRef.current = newCode;
         if (timerRef.current) clearTimeout(timerRef.current);
